@@ -1,5 +1,8 @@
+from cmath import log
 import torch
 from torch import nn
+
+import sys
 
 from ldm.data.personalized import per_img_token_list
 from transformers import CLIPTokenizer
@@ -13,13 +16,14 @@ def get_clip_token_for_string(tokenizer, string):
     batch_encoding = tokenizer(string, truncation=True, max_length=77, return_length=True,
                                return_overflowing_tokens=False, padding="max_length", return_tensors="pt")
     tokens = batch_encoding["input_ids"]
+    sys.stdout.write(f"tokeme: {tokens}")
     assert torch.count_nonzero(tokens - 49407) == 2, f"String '{string}' maps to more than a single token. Please use another string"
 
     return tokens[0, 1]
 
 def get_bert_token_for_string(tokenizer, string):
     token = tokenizer(string)
-    assert torch.count_nonzero(token) == 3, f"String '{string}' maps to more than a single token. Please use another string"
+    # assert torch.count_nonzero(token) == 3, f"String '{string}' maps to more than a single token. Please use another string"
 
     token = token[0, 1]
 
@@ -57,7 +61,7 @@ class EmbeddingManager(nn.Module):
             self.is_clip = True
             get_token_for_string = partial(get_clip_token_for_string, embedder.tokenizer)
             get_embedding_for_tkn = partial(get_embedding_for_clip_token, embedder.transformer.text_model.embeddings)
-            token_dim = 768
+            token_dim = 1280
         else: # using LDM's BERT encoder
             self.is_clip = False
             get_token_for_string = partial(get_bert_token_for_string, embedder.tknz_fn)
